@@ -11,6 +11,8 @@ let isEditMode = false;
 let editRoundIndex = null;
 let editRanks = [];
 
+let scoreChart = null;
+
 export function initGameScreen() {
   const container = document.getElementById('screen-game');
   container.innerHTML = `
@@ -78,6 +80,13 @@ export function initGameScreen() {
                 </thead>
                 <tbody id="history-body"></tbody>
             </table>
+        </div>
+
+        <div id="chart-container" style="display: none; margin-top: 20px; margin-bottom: 30px;">
+            <h3 class="section-title">Biểu Đồ Theo Dõi</h3>
+            <div class="glass-panel" style="padding: 10px;">
+                <canvas id="score-chart"></canvas>
+            </div>
         </div>
     </div>
   `;
@@ -374,6 +383,7 @@ function renderHistory() {
     tbody.innerHTML = '';
     
     let runningTotals = Array(names.length).fill(0);
+    let cumulativeHistory = [];
     
     history.forEach((round, index) => {
         let cols = `<td>${index + 1}</td>`;
@@ -381,6 +391,7 @@ function renderHistory() {
             runningTotals[i] += score;
             cols += `<td class="${score > 0 ? 'text-green' : score < 0 ? 'text-red' : ''}">${score > 0 ? '+'+score : score}</td>`;
         });
+        cumulativeHistory.push([...runningTotals]);
         
         tbody.innerHTML += `<tr>${cols}</tr>`;
     });
@@ -391,5 +402,61 @@ function renderHistory() {
             totalCols += `<td class="total-row ${total > 0 ? 'text-green' : total < 0 ? 'text-red' : ''}">${total}</td>`;
         });
         tbody.innerHTML += `<tr>${totalCols}</tr>`;
+    }
+
+    drawChart(cumulativeHistory);
+}
+
+function drawChart(runningTotalsHistory) {
+    const names = AppState.settings.playerNames;
+    const ctx = document.getElementById('score-chart');
+    const container = document.getElementById('chart-container');
+
+    if (!document.getElementById('score-chart')) return;
+
+    if (runningTotalsHistory.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    container.style.display = 'block';
+
+    const labels = runningTotalsHistory.map((_, i) => `Vòng ${i + 1}`);
+    const datasets = names.map((name, playerIdx) => {
+        const data = runningTotalsHistory.map(totalsObj => totalsObj[playerIdx]);
+        return {
+            label: name,
+            data: data,
+            tension: 0.3,
+            borderWidth: 2,
+            pointRadius: 3
+        };
+    });
+    
+    const colors = ['#007AFF', '#34C759', '#FF3B30', '#FF9500', '#AF52DE', '#5AC8FA'];
+    datasets.forEach((ds, i) => {
+        ds.borderColor = colors[i % colors.length];
+        ds.backgroundColor = `${colors[i % colors.length]}33`;
+    });
+
+    if (scoreChart) {
+        scoreChart.data.labels = labels;
+        scoreChart.data.datasets = datasets;
+        scoreChart.update();
+    } else {
+        scoreChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels, datasets },
+            options: {
+                responsive: true,
+                color: '#fff',
+                scales: {
+                    x: { ticks: { color: '#EBEBF599' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                    y: { ticks: { color: '#EBEBF599' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                },
+                plugins: {
+                    legend: { labels: { color: '#fff' } }
+                }
+            }
+        });
     }
 }
