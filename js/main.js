@@ -86,7 +86,7 @@ export function showToast(message, type = 'info') {
 // Initialize App
 document.addEventListener('DOMContentLoaded', async () => {
   // Show loading toast
-  showToast('Đang kết nối Cloud...', 'info');
+  showToast('Dang ket noi Cloud...', 'info');
 
   await loadSettings();
   await loadHistory();
@@ -99,5 +99,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Start at home
   navigateTo('home');
-  showToast('Đã tải xong dữ liệu!', 'success');
+  showToast('Da tai xong du lieu!', 'success');
 });

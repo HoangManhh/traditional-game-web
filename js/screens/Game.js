@@ -156,7 +156,7 @@ function bindEvents() {
     document.getElementById('btn-reset').addEventListener('click', async () => {
         if (confirm('Bạn có chắc muốn reset trò chơi?')) {
             AppState.history = [];
-            showToast('Đang reset Cloud...', 'info');
+            showToast('Dang reset Cloud...', 'info');
             await saveHistory();
             resetRoundInputs();
             renderHistory();
@@ -365,11 +365,11 @@ async function calculateScores() {
         uPlayerIndex: isUMode ? parseInt(uPlayerIndex) : undefined
     });
     
-    showToast('Đang lưu Cloud...', 'info');
+    showToast('Dang luu Cloud...', 'info');
     await saveHistory();
     resetRoundInputs();
     renderHistory();
-    showToast('Đã tính điểm vòng đấu', 'success');
+    showToast('Da tinh diem vong dau', 'success');
 }
 
 function renderHistory() {
