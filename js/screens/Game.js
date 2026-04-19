@@ -153,10 +153,11 @@ function bindEvents() {
     });
 
     document.getElementById('btn-calculate').addEventListener('click', calculateScores);
-    document.getElementById('btn-reset').addEventListener('click', () => {
+    document.getElementById('btn-reset').addEventListener('click', async () => {
         if (confirm('Bạn có chắc muốn reset trò chơi?')) {
             AppState.history = [];
-            saveHistory();
+            showToast('Đang reset Cloud...', 'info');
+            await saveHistory();
             resetRoundInputs();
             renderHistory();
             showToast('Đã reset trò chơi', 'success');
@@ -289,7 +290,7 @@ function validateRanks(ranks) {
     return hasAllReq && isUnique;
 }
 
-function calculateScores() {
+async function calculateScores() {
     const names = AppState.settings.playerNames;
     const scores = AppState.settings.scores;
     const numPlayers = names.length;
@@ -364,7 +365,8 @@ function calculateScores() {
         uPlayerIndex: isUMode ? parseInt(uPlayerIndex) : undefined
     });
     
-    saveHistory();
+    showToast('Đang lưu Cloud...', 'info');
+    await saveHistory();
     resetRoundInputs();
     renderHistory();
     showToast('Đã tính điểm vòng đấu', 'success');

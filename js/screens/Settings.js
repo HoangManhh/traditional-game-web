@@ -56,7 +56,7 @@ export function initSettingsScreen() {
     navigateTo('home');
   });
 
-  document.getElementById('btn-save-settings').addEventListener('click', () => {
+  document.getElementById('btn-save-settings').addEventListener('click', async () => {
     // Save player names
     const playerInputs = document.querySelectorAll('.player-input');
     const newNames = [];
@@ -72,7 +72,8 @@ export function initSettingsScreen() {
     AppState.settings.scores.uPenalty = parseInt(document.getElementById('set-upenalty').value) || -20;
     AppState.settings.scores.uDenPenalty = parseInt(document.getElementById('set-udenpenalty').value) || -30;
 
-    saveSettings();
+    showToast('Đang lưu về Cloud...', 'info');
+    await saveSettings();
     showToast('Đã lưu cài đặt', 'success');
   });
 }

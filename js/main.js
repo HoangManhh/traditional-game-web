@@ -2,6 +2,7 @@ import { initHomeScreen } from './screens/Home.js';
 import { initGameScreen } from './screens/Game.js';
 import { initSettingsScreen } from './screens/Settings.js';
 import { initAdviseScreen } from './screens/Advise.js';
+import { saveSettingsToFB, loadSettingsFromFB, saveHistoryToFB, loadHistoryFromFB } from './firebase-service.js';
 
 // Globals for App State
 export const AppState = {
@@ -39,42 +40,32 @@ export function navigateTo(screenId) {
   }
 }
 
-// Local Storage Wrappers
-export function loadSettings() {
-  const saved = localStorage.getItem('traditionalGameSettings');
+// Firebase Wrappers
+export async function loadSettings() {
+  const saved = await loadSettingsFromFB();
   if (saved) {
-    try {
-      AppState.settings = JSON.parse(saved);
-    } catch (e) {
-      console.error('Error parsing settings', e);
-      AppState.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-    }
+    AppState.settings = saved;
   } else {
     AppState.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-    saveSettings();
+    await saveSettings();
   }
 }
 
-export function saveSettings() {
-  localStorage.setItem('traditionalGameSettings', JSON.stringify(AppState.settings));
+export async function saveSettings() {
+  await saveSettingsToFB(AppState.settings);
 }
 
-export function loadHistory() {
-  const saved = localStorage.getItem('traditionalGameHistory');
+export async function loadHistory() {
+  const saved = await loadHistoryFromFB();
   if (saved) {
-    try {
-      AppState.history = JSON.parse(saved);
-    } catch (e) {
-      console.error('Error parsing history', e);
-      AppState.history = [];
-    }
+    AppState.history = saved;
   } else {
     AppState.history = [];
   }
 }
 
-export function saveHistory() {
-  localStorage.setItem('traditionalGameHistory', JSON.stringify(AppState.history));
+export async function saveHistory() {
+  await saveHistoryToFB(AppState.history);
 }
 
 // Toast Notifications
@@ -93,9 +84,12 @@ export function showToast(message, type = 'info') {
 }
 
 // Initialize App
-document.addEventListener('DOMContentLoaded', () => {
-  loadSettings();
-  loadHistory();
+document.addEventListener('DOMContentLoaded', async () => {
+  // Show loading toast
+  showToast('Đang kết nối Cloud...', 'info');
+
+  await loadSettings();
+  await loadHistory();
   
   // Inject screens structure
   initHomeScreen();
@@ -105,4 +99,5 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Start at home
   navigateTo('home');
+  showToast('Đã tải xong dữ liệu!', 'success');
 });
