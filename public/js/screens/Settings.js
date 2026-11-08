@@ -73,7 +73,9 @@ export function initSettingsScreen() {
     AppState.settings.scores.uDenPenalty = parseInt(document.getElementById('set-udenpenalty').value) || -30;
 
     showToast('Dang luu ve Cloud...', 'info');
-    await saveSettings();
+    if (!(await saveSettings())) {
+      return showToast('Luu cai dat that bai', 'error');
+    }
     showToast('Da luu cai dat', 'success');
   });
 }

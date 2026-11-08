@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "traditional-game-web",
+  "main": "worker/index.js",
+  "compatibility_date": "2025-10-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "traditional-game",
+      // Replace with the id printed by: npx wrangler d1 create traditional-game
+      "database_id": "e9775c0c-75c7-4faf-b961-01473025d57b",
+      "migrations_dir": "migrations"
+    }
+  ]
+}

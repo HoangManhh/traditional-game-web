@@ -155,9 +155,13 @@ function bindEvents() {
     document.getElementById('btn-calculate').addEventListener('click', calculateScores);
     document.getElementById('btn-reset').addEventListener('click', async () => {
         if (confirm('Bạn có chắc muốn reset trò chơi?')) {
+            const previousHistory = AppState.history;
             AppState.history = [];
             showToast('Dang reset Cloud...', 'info');
-            await saveHistory();
+            if (!(await saveHistory())) {
+                AppState.history = previousHistory;
+                return showToast('Reset that bai, du lieu chua bi xoa', 'error');
+            }
             resetRoundInputs();
             renderHistory();
             showToast('Đã reset trò chơi', 'success');
@@ -323,8 +327,8 @@ async function calculateScores() {
     // Calculate U Den
     else if (isUDenMode) {
         uDenPairs.forEach(({uDenPlayer, uDenVictim}) => {
-            uDenScores[uDenVictim] = scores.uDenPenalty;
-            uDenScores[uDenPlayer] = -scores.uDenPenalty;
+            uDenScores[uDenVictim] += scores.uDenPenalty;
+            uDenScores[uDenPlayer] -= scores.uDenPenalty;
         });
     } 
     // Calculate Rank
@@ -366,7 +370,11 @@ async function calculateScores() {
     });
     
     showToast('Dang luu Cloud...', 'info');
-    await saveHistory();
+    if (!(await saveHistory())) {
+        // Keep the inputs so the round can be saved again.
+        AppState.history.pop();
+        return showToast('Luu that bai, vui long thu lai', 'error');
+    }
     resetRoundInputs();
     renderHistory();
     showToast('Da tinh diem vong dau', 'success');

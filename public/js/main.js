@@ -2,7 +2,7 @@ import { initHomeScreen } from './screens/Home.js';
 import { initGameScreen } from './screens/Game.js';
 import { initSettingsScreen } from './screens/Settings.js';
 import { initAdviseScreen } from './screens/Advise.js';
-import { saveSettingsToFB, loadSettingsFromFB, saveHistoryToFB, loadHistoryFromFB } from './firebase-service.js';
+import { saveSettingsRemote, loadSettingsRemote, saveHistoryRemote, loadHistoryRemote } from './api-service.js';
 
 // Globals for App State
 export const AppState = {
@@ -40,32 +40,23 @@ export function navigateTo(screenId) {
   }
 }
 
-// Firebase Wrappers
+// Server API Wrappers (load* throw on failure, save* return true/false)
 export async function loadSettings() {
-  const saved = await loadSettingsFromFB();
-  if (saved) {
-    AppState.settings = saved;
-  } else {
-    AppState.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-    await saveSettings();
-  }
+  const saved = await loadSettingsRemote();
+  AppState.settings = saved || JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 }
 
 export async function saveSettings() {
-  await saveSettingsToFB(AppState.settings);
+  return saveSettingsRemote(AppState.settings);
 }
 
 export async function loadHistory() {
-  const saved = await loadHistoryFromFB();
-  if (saved) {
-    AppState.history = saved;
-  } else {
-    AppState.history = [];
-  }
+  const saved = await loadHistoryRemote();
+  AppState.history = saved || [];
 }
 
 export async function saveHistory() {
-  await saveHistoryToFB(AppState.history);
+  return saveHistoryRemote(AppState.history);
 }
 
 // Toast Notifications
@@ -88,9 +79,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Show loading toast
   showToast('Dang ket noi Cloud...', 'info');
 
-  await loadSettings();
-  await loadHistory();
-  
+  try {
+    await loadSettings();
+    await loadHistory();
+  } catch (error) {
+    // Do not start with empty data: the next save would overwrite the real history.
+    console.error('Load data error: ', error);
+    document.getElementById('screen-home').innerHTML = `
+      <div class="glass-panel" style="padding: 30px; text-align: center; margin: auto 0;">
+        <p style="margin-bottom: 20px;">Khong tai duoc du lieu tu server.</p>
+        <button class="btn btn-primary" id="btn-reload">Tai lai</button>
+      </div>
+    `;
+    document.getElementById('btn-reload').addEventListener('click', () => location.reload());
+    showToast('Loi ket noi server', 'error');
+    return;
+  }
+
   // Inject screens structure
   initHomeScreen();
   initSettingsScreen();
