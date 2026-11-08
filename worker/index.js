@@ -1,6 +1,7 @@
 // API for the score app. Static files in /public are served by Workers Assets;
 // only /api/* requests reach this code.
 //
+//   GET /api/state                    -> { settings, history } in one request (used for polling)
 //   GET /api/settings | /api/history  -> stored JSON (or null)
 //   PUT /api/settings | /api/history  -> replace stored JSON, requires X-App-Pin
 
@@ -22,6 +23,14 @@ export default {
     }
 
     const key = url.pathname.slice('/api/'.length);
+    if (key === 'state' && request.method === 'GET') {
+      const { results } = await env.DB.prepare('SELECT key, value FROM app_data').all();
+      const state = { settings: null, history: null };
+      for (const row of results) {
+        if (Object.hasOwn(state, row.key)) state[row.key] = JSON.parse(row.value);
+      }
+      return json(state);
+    }
     if (!Object.hasOwn(VALIDATORS, key)) {
       return json({ error: 'Not found' }, 404);
     }

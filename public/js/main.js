@@ -1,8 +1,10 @@
 import { initHomeScreen } from './screens/Home.js';
-import { initGameScreen } from './screens/Game.js';
+import { initGameScreen, renderGameScreen, renderHistory } from './screens/Game.js';
 import { initSettingsScreen } from './screens/Settings.js';
 import { initAdviseScreen } from './screens/Advise.js';
-import { saveSettingsRemote, loadSettingsRemote, saveHistoryRemote, loadHistoryRemote } from './api-service.js';
+import { saveSettingsRemote, loadSettingsRemote, saveHistoryRemote, loadHistoryRemote, loadStateRemote } from './api-service.js';
+
+const SYNC_INTERVAL_MS = 5000;
 
 // Globals for App State
 export const AppState = {
@@ -47,7 +49,7 @@ export async function loadSettings() {
 }
 
 export async function saveSettings() {
-  return saveSettingsRemote(AppState.settings);
+  return trackSave(() => saveSettingsRemote(AppState.settings));
 }
 
 export async function loadHistory() {
@@ -56,7 +58,61 @@ export async function loadHistory() {
 }
 
 export async function saveHistory() {
-  return saveHistoryRemote(AppState.history);
+  return trackSave(() => saveHistoryRemote(AppState.history));
+}
+
+// Sync with other devices by polling. A poll result is dropped if a local save
+// started or is still running meanwhile, so stale server data never replaces
+// a round that is being saved.
+let pendingSaves = 0;
+let saveGeneration = 0;
+
+async function trackSave(save) {
+  pendingSaves++;
+  saveGeneration++;
+  try {
+    return await save();
+  } finally {
+    pendingSaves--;
+  }
+}
+
+async function syncFromServer() {
+  if (document.hidden || pendingSaves > 0) return;
+  const generation = saveGeneration;
+
+  let state;
+  try {
+    state = await loadStateRemote();
+  } catch (error) {
+    console.error('Sync error: ', error);
+    return;
+  }
+  if (generation !== saveGeneration || pendingSaves > 0) return;
+
+  const history = state.history || [];
+  const historyChanged = JSON.stringify(history) !== JSON.stringify(AppState.history);
+  const settingsChanged = state.settings !== null && JSON.stringify(state.settings) !== JSON.stringify(AppState.settings);
+  if (!historyChanged && !settingsChanged) return;
+
+  const namesChanged = settingsChanged && JSON.stringify(state.settings.playerNames) !== JSON.stringify(AppState.settings.playerNames);
+  AppState.history = history;
+  if (settingsChanged) AppState.settings = state.settings;
+
+  // The settings screen is left alone so edits in progress are not wiped;
+  // it reads the new values the next time it opens.
+  if (document.getElementById('screen-game').classList.contains('active')) {
+    if (namesChanged) renderGameScreen();
+    else renderHistory();
+    if (historyChanged) showToast('Da cap nhat diem moi', 'info');
+  }
+}
+
+function startSync() {
+  setInterval(syncFromServer, SYNC_INTERVAL_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) syncFromServer();
+  });
 }
 
 // Toast Notifications
@@ -105,4 +161,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Start at home
   navigateTo('home');
   showToast('Da tai xong du lieu!', 'success');
+  startSync();
 });

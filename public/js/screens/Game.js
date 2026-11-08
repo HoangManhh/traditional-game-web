@@ -380,7 +380,7 @@ async function calculateScores() {
     showToast('Da tinh diem vong dau', 'success');
 }
 
-function renderHistory() {
+export function renderHistory() {
     const names = AppState.settings.playerNames;
     const history = AppState.history;
     

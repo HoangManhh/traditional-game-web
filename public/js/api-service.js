@@ -66,6 +66,7 @@ async function saveData(key, value) {
   }
 }
 
+export const loadStateRemote = () => loadData('state');
 export const loadSettingsRemote = () => loadData('settings');
 export const saveSettingsRemote = (settings) => saveData('settings', settings);
 export const loadHistoryRemote = () => loadData('history');
